@@ -335,4 +335,4 @@ class EducationalAgent:
 educational_agent = EducationalAgent()
 
 # The main agent that will be used by the web interface
-root_agent = educational_agent.guide_agent
+root_agent = educational_agent.root_agent

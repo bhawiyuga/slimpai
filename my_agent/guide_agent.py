@@ -5,7 +5,7 @@ The friendly, encouraging "homeroom teacher" or "quest guide."
 
 from google.adk.agents.llm_agent import Agent
 
-guide_agent = Agent(
+root_agent = Agent(
     model='gemini-2.5-flash',
     name='guide',
     description='The friendly homeroom teacher and quest guide for the AI Learning Pod',

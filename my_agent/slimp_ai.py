@@ -13,7 +13,7 @@ import os
 import uuid
 
 # Import all agents
-from .guide_agent import guide_agent
+from .guide_agent import root_agent as guide_agent
 from .tester_agent import tester_agent
 from .planner_agent import planner_agent
 from .explainer_agent import explainer_agent
