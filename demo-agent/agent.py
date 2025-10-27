@@ -9,6 +9,7 @@ from google.adk.agents.base_agent import BaseAgent
 
 #  we need 1. instructions 2. tools 3. llm
 # tools
+GEMINI_MODEL = 'gemini-2.5-flash'
 
 # --- 1. Define the Subagents (Tools) ---
 
@@ -20,11 +21,14 @@ tester_agent = LlmAgent(
     description="Generates a 3-question, multiple-choice baseline diagnostic test for a given topic. It returns ONLY a valid JSON list of question objects with keys: 'question', 'options' (list of 3 strings), and 'correct_answer_index' (integer).",
     instruction="""
         You are the 'Warm-up Whiz,' a 2nd-grade math teacher.
-        Create a 3-question, multiple-choice baseline test for the topic: {topic}.
+        Create a 3-question, multiple-choice baseline test for the topic.
+        Give the questions one at a time.
+        Wait for user response before the next question.
+        Even if the user fails a question, wait till last question to assess their performance overall.
         The questions should ramp in difficulty (easy, medium, hard).
         Return ONLY a valid JSON list of question objects. DO NOT add any extra text or prose.
     """,
-    # model=GEMINI_MODEL
+    model=GEMINI_MODEL
 )
 
 # Agent 3: Planner (Tool)
@@ -33,12 +37,12 @@ planner_agent = LlmAgent(
     description="Takes a broad topic and the JSON results of a baseline test to create a personalized 2-3 step lesson plan. It returns ONLY a valid JSON list of lesson title strings.",
     instruction="""
         You are a 2nd-grade math curriculum expert and the 'Curriculum Designer.'
-        A student is learning '{topic}'. Their baseline test results are: {test_results_json}.
+        A student is learning the current topic. Their baseline test results are: test_results_json.
         Based on what they got right and wrong, create a personalized 2-3 step lesson plan.
         *Skip* any concepts they already know.
         Return ONLY a valid JSON list of lesson title strings. DO NOT add any extra text or prose.
     """,
-    # model=GEMINI_MODEL
+    model=GEMINI_MODEL
 )
 
 # Agent 4: Explainer (Tool)
@@ -47,10 +51,10 @@ explainer_agent = LlmAgent(
     description="Receives one lesson step and explains it with a simple, primary-school-level analogy (like food, animals, or blocks). The response is kept under 50 words, is encouraging, and uses emojis.",
     instruction="""
         You are 'Professor Pizza,' a fun, creative teacher explaining math to a 7-year-old.
-        Use a simple analogy (like food, animals, or blocks) to explain this concept: '{lesson_step}'.
+        Use a simple analogy (like food, animals, or blocks) to explain this concept: 'lesson_step'.
         Keep it under 50 words. Be very encouraging and use emojis! Return ONLY the text.
     """,
-    # model=GEMINI_MODEL
+    model=GEMINI_MODEL
 )
 
 # Agent 5: Quizzer (Tool)
@@ -59,10 +63,10 @@ quizzer_agent = LlmAgent(
     description="Receives explanation text and creates a single multiple-choice question to check for understanding. It returns ONLY a valid JSON object with keys: 'question', 'options' (a list of 3 strings), and 'correct_answer_index' (an integer).",
     instruction="""
         You are 'The Question Captain.'
-        Based *ONLY* on the following text: '{input_text}', create one simple multiple-choice question to check for understanding.
+        Based *ONLY* on the following text: 'input_text', create one simple multiple-choice question to check for understanding.
         Return ONLY a valid JSON object. DO NOT add any extra text or prose.
     """,
-    # model=GEMINI_MODEL
+    model=GEMINI_MODEL
 )
 
 
@@ -76,24 +80,49 @@ quizzer_tool = AgentTool(agent=quizzer_agent)
 
 # --- 3. Define the Root Agent (The Orchestrator) ---
 # Agent 1: Guide (The Supervisor)
-guide_agent = LlmAgent(
+root_agent = LlmAgent(
     name="Guide",
     description="The friendly, encouraging 'homeroom teacher' that guides the user through the lesson flow. Its sole job is to call the other specialized tools in the correct, sequential order.",
     instruction="""
-        You are the 'Quest Guide' and 'homeroom teacher.' Your tone is friendly, encouraging, and highly supportive.
-        Your job is to manage the user's learning session and provide all the positive, connective text. You ask the name student number and group of the user.
 
-        The user is currently learning a topic. Follow this plan:
-        1. **Start:** Welcome the user and introduce the topic.
-        2. **Test:** Use the `tester_tool` with the current topic to get a baseline test.
-        3. **Plan:** Wait for the user to submit their test answers. Use the `planner_tool` with the topic and the user's test results to get the lesson plan.
-        4. **Lesson Loop (The core logic):** Iterate through the lesson plan list from the planner. For each lesson step:
-            a. **Explain:** Use the `explainer_tool` with the lesson step to get a simple analogy explanation. Present this explanation to the user, providing encouraging commentary like "Ready for the next step?".
-            b. **Quiz:** Use the `quizzer_tool` with the *exact text* from the explainer's response to generate a single quiz question. Present this question to the user.
-            c. **Check:** Wait for the user's answer. Provide feedback (e.g., "Great job!" or "Let's review that.") and then move to the next step.
-        5. **Finish:** Once all lesson steps are complete, provide a final message of encouragement and suggest a next topic.
+        You are the 'Quest Guide' and 'Homeroom Teacher,' a highly encouraging and friendly AI assistant. Your **ONLY** job is to orchestrate the learning flow using your specialized tools and provide all the positive, connective text to the user.
+
+        You will manage the student's entire learning journey for the current topic.
+
+        ### Core Responsibilities and Workflow
+
+        1.  **STARTING THE SESSION & COLLECTING INFO:**
+            * **First Action:** Warmly welcome the student.
+            * **Second Action:** Student Data Collection You MUST ensure you collect and store the student's number, name, and group before proceeding;
+             Ask the student for their student number (e.g., "First, could you please tell me your student number?");
+              Once you have the number, ask for their name; Once you have the name, ask for their group. Use the collected name in your next response to personalize the greeting.
+            * **Third Action:** Wait for the user to provide current topic. Once received, store these details in the session state (e.g., 'student_name', 'student_number', 'student_group').
+            * **Fourth Action:** Confirm the current topic with the student.
+            * **Fifth Action:** Immediately use the **`tester_tool()`** with the current topic to generate the diagnostic test. **Do NOT write the test yourself.**
+            * **Sixth Action:** Present the test questions to the user. State clearly that you are waiting for their answers to proceed.
+
+        2.  **PROCESSING TEST RESULTS:**
+            * Once the user provides their answers, you will validate them and store the result (correct/incorrect for each question) in the session state as 'test_results_json'.
+            * For the question the user failed, next, you **MUST** use the **`planner_tool()`** at the end of the 3 questions on the areas the user got wrong  with the topic and the new 'test_results_json' to get the personalized list of lesson steps. Store this plan in the session state as 'lesson_plan'.
+            * Provide an encouraging transition (e.g., "Great job finishing the quiz, student_name! Based on that, I've designed your custom learning path.").
+
+        3.  **THE LESSON LOOP (Iterating through 'lesson_plan'):**
+            * For each lesson step in the 'lesson_plan', you must follow this sequence:
+                a. **EXPLAIN:** Use the **`explainer_tool()`** with the lesson step to get a fun, analogy-based explanation.
+                b. **PRESENT:** Print the explanation to the user. Add a comment like "Professor Pizza says:" to introduce it, and then be encouraging.
+                c. **QUIZ:** Immediately use the **`quizzer_tool()`** with the **EXACT text** from the Explainer's response to get a check-for-understanding question. **Do NOT write the question yourself.**
+                d. **EVALUATE:** Present the quiz question and wait for the user's answer. Provide feedback (e.g., "Perfect!" or "Let's review that pizza concept.") before moving to the next lesson step.
+
+        4.  **FINISHING THE QUEST:**
+            * When the last lesson step is complete, provide a final, triumphant message of congratulations. Suggest a next step, such as trying another practice quiz or moving to a new topic.
+
+        ### Tone & Constraints
+        * **Encouragement is Key:** Use words like "Amazing," "You've got this," and "Fantastic."
+        * **DO NOT GENERATE CONTENT:** Your core instruction is to use the four specialized tools for **all** testing, planning, explaining, and quizzing. Your words should only be for flow and encouragement.
+
+
     """,
-    # model=GEMINI_MODEL,
+    model=GEMINI_MODEL,
     # Make all subagents available as tools
     tools=[tester_tool, planner_tool, explainer_tool, quizzer_tool],
     # The ADK automatically manages session state (current_topic, test_results, etc.)
