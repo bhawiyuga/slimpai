@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>slimpAI - Your AI Learning Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&family=Google+Sans+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slimp: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            200: '#f5d0fe',
+                            300: '#f0abfc',
+                            400: '#e879f9',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                            700: '#a21caf',
+                            800: '#86198f',
+                            900: '#701a75',
+                        },
+                        dark: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Google Sans', 'Inter', 'system-ui', 'sans-serif'],
+                        display: ['Google Sans Display', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'gradient': 'gradient 8s ease infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'shimmer': 'shimmer 2s linear infinite',
+                    },
+                    keyframes: {
+                        gradient: {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-1000px 0' },
+                            '100%': { backgroundPosition: '1000px 0' },
+                        }
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Inter', sans-serif;
+            background: linear-gradient(-45deg, #0ea5e9 0%, #0284c7 25%, #d946ef 50%, #38bdf8 75%, #c026d3 100%);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark-glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #0ea5e9 0%, #d946ef 100%);
+            border-radius: 10px;
+        }
+        #chat-window::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #d946ef 0%, #0ea5e9 100%);
+        }
+
+        .message-enter {
+            animation: messageSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+        .typing-indicator span {
+            height: 10px;
+            width: 10px;
+            background: linear-gradient(135deg, #0ea5e9 0%, #d946ef 100%);
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% { 
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        .option-btn {
+            position: relative;
+            padding: 14px 28px;
+            margin: 6px;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(217, 70, 239, 0.1) 100%);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            color: #0369a1;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .option-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0ea5e9 0%, #d946ef 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .option-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 24px -10px rgba(14, 165, 233, 0.4);
+            border-color: #0ea5e9;
+        }
+
+        .option-btn:hover::before {
+            opacity: 0.1;
+        }
+
+        .option-btn.selected {
+            background: linear-gradient(135deg, #0ea5e9 0%, #d946ef 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 16px -4px rgba(14, 165, 233, 0.5);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #0ea5e9 0%, #d946ef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .bot-avatar {
+            background: linear-gradient(135deg, #0ea5e9 0%, #d946ef 100%);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex items-center justify-center p-2 md:p-6">
+    <div id="app-container" class="w-full max-w-4xl h-[95vh] glass-effect rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+        
+        <!-- Header -->
+        <header class="relative overflow-hidden p-6 border-b border-gray-200/50">
+            <div class="absolute inset-0 bg-gradient-to-r from-slimp-500/10 via-accent-500/10 to-slimp-400/10 shimmer"></div>
+            <div class="relative flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <!-- slimpAI Logo -->
+                        <div class="w-12 h-12 rounded-2xl bot-avatar flex items-center justify-center text-white text-2xl animate-float">
+                            <svg viewBox="0 0 40 40" class="w-8 h-8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- AI Brain Icon -->
+                                <circle cx="20" cy="20" r="16" stroke="white" stroke-width="2" opacity="0.3"/>
+                                <path d="M20 8 L20 32 M12 12 L28 28 M12 28 L28 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                                <circle cx="20" cy="20" r="4" fill="white"/>
+                                <circle cx="14" cy="14" r="2" fill="white"/>
+                                <circle cx="26" cy="14" r="2" fill="white"/>
+                                <circle cx="14" cy="26" r="2" fill="white"/>
+                                <circle cx="26" cy="26" r="2" fill="white"/>
+                            </svg>
+                        </div>
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white pulse"></div>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-display font-bold gradient-text">slimpAI</h1>
+                        <p class="text-sm text-gray-600 font-medium">Smart Learning Intelligence</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-slimp-50 to-accent-50 rounded-full border border-slimp-200">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-semibold text-slimp-700">Online</span>
+                    </div>
+                    <button class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="flex-1 flex items-center justify-center">
+            <div class="text-center">
+                <div class="relative mb-8">
+                    <div class="w-24 h-24 mx-auto rounded-3xl bot-avatar flex items-center justify-center text-white text-5xl animate-float">
+                        <svg viewBox="0 0 40 40" class="w-16 h-16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="16" stroke="white" stroke-width="2" opacity="0.3"/>
+                            <path d="M20 8 L20 32 M12 12 L28 28 M12 28 L28 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                            <circle cx="20" cy="20" r="4" fill="white"/>
+                            <circle cx="14" cy="14" r="2" fill="white"/>
+                            <circle cx="26" cy="14" r="2" fill="white"/>
+                            <circle cx="14" cy="26" r="2" fill="white"/>
+                            <circle cx="26" cy="26" r="2" fill="white"/>
+                        </svg>
+                    </div>
+                    <div class="absolute inset-0 rounded-3xl bg-gradient-to-r from-slimp-500 to-accent-500 opacity-20 blur-2xl animate-pulse"></div>
+                </div>
+                <h2 class="text-2xl font-display font-bold gradient-text mb-2">Initializing slimpAI</h2>
+                <p class="text-gray-600">Preparing your personalized learning experience...</p>
+                <div class="mt-6 flex justify-center space-x-2">
+                    <div class="w-3 h-3 bg-slimp-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                    <div class="w-3 h-3 bg-accent-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-3 h-3 bg-slimp-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Window -->
+        <div id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-6 hidden"></div>
+
+        <!-- Typing Indicator -->
+        <div id="typing-indicator" class="hidden px-6 pb-4">
+            <div class="flex items-start space-x-3 message-enter">
+                <div class="flex-shrink-0 w-10 h-10 rounded-2xl bot-avatar flex items-center justify-center text-white text-xl">
+                    <svg viewBox="0 0 40 40" class="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="16" stroke="white" stroke-width="2" opacity="0.3"/>
+                        <path d="M20 8 L20 32 M12 12 L28 28 M12 28 L28 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="20" cy="20" r="4" fill="white"/>
+                        <circle cx="14" cy="14" r="2" fill="white"/>
+                        <circle cx="26" cy="14" r="2" fill="white"/>
+                        <circle cx="14" cy="26" r="2" fill="white"/>
+                        <circle cx="26" cy="26" r="2" fill="white"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <div class="inline-block px-5 py-3 rounded-2xl rounded-tl-md bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/50 shadow-sm">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Options Container -->
+        <div id="options-container" class="hidden px-6 pb-6 flex flex-wrap justify-center"></div>
+
+        <!-- Input Area -->
+        <div id="input-area" class="hidden border-t border-gray-200/50 p-6 bg-gradient-to-b from-transparent to-gray-50/50">
+            <div class="flex items-end space-x-3">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        placeholder="Ask me anything about math..." 
+                        class="w-full px-6 py-4 pr-12 bg-white border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-slimp-500 focus:ring-4 focus:ring-slimp-100 transition-all text-gray-800 placeholder-gray-400 font-medium shadow-sm"
+                    />
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </div>
+                </div>
+                <button 
+                    id="send-button" 
+                    class="px-6 py-4 bg-gradient-to-r from-slimp-600 to-accent-600 text-white rounded-2xl hover:from-slimp-700 hover:to-accent-700 transition-all font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        console.log("slimpAI - Initializing...");
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const optionsContainer = document.getElementById('options-container');
+        const inputArea = document.getElementById('input-area');
+
+        // App State
+        let currentOptions = [];
+
+        // Load agent
+        let educationalAgent;
+        
+        async function loadAgent() {
+            try {
+                const module = await import('./agent.js');
+                educationalAgent = module.educational_agent;
+                console.log('Agent loaded successfully');
+                return true;
+            } catch (error) {
+                console.error('Error loading agent:', error);
+                return false;
+            }
+        }
+
+        // Show typing indicator
+        function showTyping() {
+            typingIndicator.classList.remove('hidden');
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Hide typing indicator
+        function hideTyping() {
+            typingIndicator.classList.add('hidden');
+        }
+
+        // Add message to chat
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex items-start space-x-3 message-enter ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `flex-shrink-0 w-10 h-10 rounded-2xl ${isUser ? 'user-avatar' : 'bot-avatar'} flex items-center justify-center text-white text-xl`;
+            
+            if (isUser) {
+                avatar.textContent = '👤';
+            } else {
+                avatar.innerHTML = `
+                    <svg viewBox="0 0 40 40" class="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="16" stroke="white" stroke-width="2" opacity="0.3"/>
+                        <path d="M20 8 L20 32 M12 12 L28 28 M12 28 L28 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="20" cy="20" r="4" fill="white"/>
+                        <circle cx="14" cy="14" r="2" fill="white"/>
+                        <circle cx="26" cy="14" r="2" fill="white"/>
+                        <circle cx="14" cy="26" r="2" fill="white"/>
+                        <circle cx="26" cy="26" r="2" fill="white"/>
+                    </svg>
+                `;
+            }
+            
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'flex-1 max-w-2xl';
+            
+            const content = document.createElement('div');
+            if (isUser) {
+                content.className = 'inline-block px-5 py-3 rounded-2xl rounded-tr-md bg-gradient-to-br from-slimp-500 to-accent-600 text-white shadow-lg';
+            } else {
+                content.className = 'inline-block px-5 py-3 rounded-2xl rounded-tl-md bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/50 text-gray-800 shadow-sm';
+            }
+            
+            // Format text with better styling
+            const formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+                .replace(/\n\n/g, '</p><p class="mt-3">')
+                .replace(/\n/g, '<br>');
+            
+            content.innerHTML = `<p class="leading-relaxed">${formattedText}</p>`;
+            
+            contentWrapper.appendChild(content);
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentWrapper);
+            
+            chatWindow.appendChild(messageDiv);
+            
+            // Smooth scroll to bottom
+            setTimeout(() => {
+                chatWindow.scrollTo({
+                    top: chatWindow.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        // Show options
+        function showOptions(options) {
+            currentOptions = options;
+            optionsContainer.innerHTML = '';
+            optionsContainer.classList.remove('hidden');
+            
+            options.forEach((option) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.addEventListener('click', () => handleUserInput(option));
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        // Hide options
+        function hideOptions() {
+            optionsContainer.classList.add('hidden');
+            optionsContainer.innerHTML = '';
+        }
+
+        // Handle user input
+        async function handleUserInput(text) {
+            if (!text || !text.trim()) return;
+            
+            // Add user message
+            addMessage(text, true);
+            
+            // Clear input and hide options
+            userInput.value = '';
+            hideOptions();
+            
+            // Show typing
+            showTyping();
+            
+            try {
+                // Make sure agent is loaded
+                if (!educationalAgent) {
+                    await loadAgent();
+                }
+                
+                // Send message to agent
+                const response = await educationalAgent.process_message(text);
+                
+                // Hide typing
+                hideTyping();
+                
+                // Add bot response
+                addMessage(response);
+                
+                // Check if we should show options
+                if (educationalAgent.current_quiz_question) {
+                    const options = educationalAgent.current_quiz_question.options;
+                    showOptions(options);
+                } else if (educationalAgent.shouldShowNextButton) {
+                    showOptions(['Next']);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                hideTyping();
+                addMessage("I'm sorry, I encountered an error. Please try again. 😊");
+            }
+        }
+
+        // Initialize app
+        async function init() {
+            try {
+                // Load agent
+                const loaded = await loadAgent();
+                if (!loaded) {
+                    throw new Error('Failed to load agent');
+                }
+                
+                // Hide loading screen
+                loadingScreen.classList.add('hidden');
+                chatWindow.classList.remove('hidden');
+                inputArea.classList.remove('hidden');
+                
+                // Set up event listeners
+                sendButton.addEventListener('click', () => {
+                    handleUserInput(userInput.value.trim());
+                });
+                
+                userInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        handleUserInput(userInput.value.trim());
+                    }
+                });
+                
+                // Start conversation
+                setTimeout(() => {
+                    showTyping();
+                    setTimeout(() => {
+                        hideTyping();
+                        addMessage("**Welcome to slimpAI!** 🚀\n\nI'm your intelligent learning companion, powered by advanced AI to make education engaging and personalized. I adapt to your learning style and help you master concepts at your own pace.\n\nLet's start with a quick assessment to understand your current knowledge. Ready to begin your learning journey?");
+                        showOptions(['✨ Yes, let\'s go!', '⏸️ Not now']);
+                    }, 1500);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                loadingScreen.innerHTML = `
+                    <div class="text-center p-8">
+                        <h2 class="text-2xl font-bold text-red-500 mb-4">Oops! Something went wrong</h2>
+                        <p class="mb-4">We couldn't load the educational agent. Please refresh the page.</p>
+                        <button onclick="window.location.reload()" class="px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors">
+                            Refresh Page
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Start when DOM is ready
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
