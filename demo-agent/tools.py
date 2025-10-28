@@ -2,6 +2,31 @@ from typing import Any, Dict
 from google.adk.tools.tool_context import ToolContext
 
 
+def store_user_info(tool_context: ToolContext, student_number: str, name: str, grade: int) -> Dict[str, Any]:
+    """
+    Store user information such as name, age, and grade in the tool context state.
+    
+    Args:
+        student_number (str): The student's identification number.
+        name (str): The name of the user.
+        grade (int): The grade level of the user.
+    
+    Returns:
+        Dict[str, Any]: A dictionary confirming the stored user information.
+    """
+    state = tool_context.state
+    state["student_number"] = student_number
+    state["name"] = name
+    state["grade"] = grade
+    return {
+        "status": "success",
+        "stored_info": {
+            "name": name,
+            "age": age,
+            "grade": grade
+        }
+    }
+
 def submit_answer(tool_context: ToolContext, question: str, answer: str, is_correct: bool) -> Dict[str, Any]:
     """
     Record a user's answer submission and update quiz state tracking.

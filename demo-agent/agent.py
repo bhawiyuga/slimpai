@@ -7,7 +7,7 @@ from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.agents.base_agent import BaseAgent
 
-from .tools import submit_answer, start_quiz
+from .tools import submit_answer, start_quiz, store_user_info
 
 #  we need 1. instructions 2. tools 3. llm
 # tools
@@ -98,10 +98,10 @@ root_agent = LlmAgent(
 
         1.  **STARTING THE SESSION & COLLECTING INFO:**
             * **First Action:** Warmly welcome the student.
-            * **Second Action:** Student Data Collection You MUST ensure you collect and store the student's number, name, and group before proceeding;
+            * **Second Action:** Student Data Collection: If {student_number?} is not exist in state, You MUST collect the student's number, name, group, then store by calling store_user_info() before proceeding;
              Ask the student for their student number (e.g., "First, could you please tell me your student number?");
               Once you have the number, ask for their name; Once you have the name, ask for their group. Use the collected name in your next response to personalize the greeting.
-            * **Third Action:** Wait for the user to provide current topic. Once received, store these details in the session state (e.g., 'student_name', 'student_number', 'student_group').
+            * **Third Action:** Wait for the user to provide current topic. Once received, store these details in the session state (e.g., 'name', 'student_number', 'group').
             * **Fourth Action:** Confirm the current topic with the student.
             * **Fifth Action:** Immediately use the **`tester_tool()`** with the current topic to generate the diagnostic test. **Do NOT write the test yourself.**
             * **Sixth Action:** Present the test questions to the user. State clearly that you are waiting for their answers to proceed.
@@ -129,63 +129,11 @@ root_agent = LlmAgent(
     """,
     model=GEMINI_MODEL,
     # Make all subagents available as tools
-    tools=[tester_tool, planner_tool, explainer_tool, quizzer_tool],
+    tools=[tester_tool, planner_tool, explainer_tool, quizzer_tool, store_user_info],
     # The ADK automatically manages session state (current_topic, test_results, etc.)
     # which the LlmAgent's prompt can reference when deciding which tool to call.
 )
 
 # --- 4. System Usage (Conceptual) ---
 
-def run_learning_session(topic, initial_query):
-    # In a real ADK application, you would initialize a Runner and Session
-    # to start the conversation with the Guide Agent.
-    
-    print(f"--- Starting Learning Session on: {topic} ---")
-    
-    # 1. Set initial state (conceptually)
-    # session.state["current_topic"] = topic 
-    
-    # 2. Run the main agent with the user's first query
-    # response = runner.run(guide_agent, initial_query)
-    
-    # 3. The guide agent's LLM will start calling its tools (Tester, Planner, etc.)
-    # and the system will proceed step-by-step, prompting the user for input
-    # after each test and quiz.
-    
-    print("\n[INFO: Guide Agent begins execution flow...]")
-    print(f"User Query: '{initial_query}'")
-    print("\n[...ADK Runner executes sequential LlmAgent calls to subagents/tools...]")
-    print("\n[Example: Guide calls Tester. Tester returns JSON test. Guide formats response and asks user to answer.]")
-    print("\n[Example: Guide calls Planner with user results. Planner returns lesson plan. Guide calls Explainer/Quizzer in a loop.]")
-    print("\n[INFO: Session Complete.]")
-
-# Example of how the script would be used:
-# if __name__ == "__main__":
-#     # The user starts the conversation
-#     run_learning_session(
-#         topic="Fractions",
-#         initial_query="I want to learn about fractions today."
-#     )
-
-# quizzler_agent = LlmAgent(
-#     model='gemini-2.5-flash',
-#     name='quizzler_agent',
-#     descrption=,
-#     instructions='You are a 2nd-grade math teacher. Create a 3-question, multiple-choice baseline test for the topic: "{topic}". The questions should ramp in difficulty (easy, medium, hard). Return ONLY a valid JSON list of question objects. Each object needs keys: "question", "options" (list of 3 strings), and "correct_answer_index" (integer).'
-
-# quizzler_tool = AgentTool(agent=)
-# root_agent = Agent(
-#     model='gemini-2.5-flash',
-#     name='root_agent',
-#     description='A helpful assistant for user questions.',
-#     instruction='use the quizzler agent when the student needs a quiz',
-#     tools=[quizzler_tool]
-# )
-
-# supervisor_guide_agent = LlmAgent(
-#     model='gemini-2.5-flash',
-#     name='supervisor_guide_agent',
-#     description=' The friendly, encouraging "homeroom teacher" or "quest guide."',
-#     instruction='You are an agent thatmotivates students with  supervisor',
-#     tools=[do_something])
 
