@@ -1,0 +1,1 @@
+ uv run adk web --session_db_url="sqlite:///./agent_store.db"

@@ -19,5 +19,7 @@ echo "⚠️  Important: Ensure the ADK API server is running!"
 echo "   Start it with: uv run adk api_server"
 echo ""
 
+uv run adk api_server --session_db_url="sqlite:///./agent_store.db" &
+sleep 2  # Give the server a moment to start
 # Run the Streamlit app
 uv run streamlit run demo-agent/app.py
