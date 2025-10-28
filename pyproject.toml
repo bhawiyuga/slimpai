@@ -6,4 +6,5 @@ dependencies = [
     "google-adk>=1.17.0",
     "litellm>=1.79.0",
     "streamlit>=1.50.0",
+    "aiohttp>=3.9.0",
 ]

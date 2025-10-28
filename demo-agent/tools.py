@@ -22,7 +22,6 @@ def store_user_info(tool_context: ToolContext, student_number: str, name: str, g
         "status": "success",
         "stored_info": {
             "name": name,
-            "age": age,
             "grade": grade
         }
     }
