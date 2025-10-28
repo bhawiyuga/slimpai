@@ -1,0 +1,9 @@
+[project]
+name = "slimpai"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk>=1.17.0",
+    "litellm>=1.79.0",
+    "streamlit>=1.50.0",
+]

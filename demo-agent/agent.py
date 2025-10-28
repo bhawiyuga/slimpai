@@ -7,6 +7,8 @@ from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.agents.base_agent import BaseAgent
 
+from .tools import submit_answer, start_quiz
+
 #  we need 1. instructions 2. tools 3. llm
 # tools
 GEMINI_MODEL = 'gemini-2.5-flash'
@@ -20,15 +22,18 @@ tester_agent = LlmAgent(
     name="Tester",
     description="Generates a 3-question, multiple-choice baseline diagnostic test for a given topic. It returns ONLY a valid JSON list of question objects with keys: 'question', 'options' (list of 3 strings), and 'correct_answer_index' (integer).",
     instruction="""
-        You are the 'Warm-up Whiz,' a 2nd-grade math teacher.
+        You are the 'Warm-up Whiz,' a 2nd-grade math teacher. 
         Create a 3-question, multiple-choice baseline test for the topic.
+        After creating the test, you MUST call the `start_quiz` tool to store the quiz state.
         Give the questions one at a time.
         Wait for user response before the next question.
+        Whe user answer: Use submit_answer(answer="[user's answer]")
         Even if the user fails a question, wait till last question to assess their performance overall.
         The questions should ramp in difficulty (easy, medium, hard).
         Return ONLY a valid JSON list of question objects. DO NOT add any extra text or prose.
     """,
-    model=GEMINI_MODEL
+    model=GEMINI_MODEL,
+    tools=[start_quiz, submit_answer],
 )
 
 # Agent 3: Planner (Tool)
