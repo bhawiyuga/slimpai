@@ -1,6 +1,6 @@
 # Math Learning Assistant - Streamlit Client
 
-This Streamlit app connects to a Google ADK API server to provide an interactive math learning experience.
+This app utilizes AI multi-agents to provide an interactive and personalized math learning experience for primary school student.
 
 ## Architecture
 
